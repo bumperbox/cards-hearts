@@ -165,5 +165,4 @@ dist
 .env*
 !.env.example
 .wrangler/
-/.idea/vcs.xml
-/.idea/workspace.xml
+.idea/

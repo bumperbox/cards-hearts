@@ -1,0 +1,32 @@
+Summary
+I've created a complete 4-player Hearts card game with the following features:
+Key Components:
+HeartsGame Durable Object: Manages the game state and logic
+Tracks all players and their hands
+Handles card dealing and trick resolution
+Scores points (1 for each heart, 13 for Queen of Spades)
+Bot Players: Each bot automatically:
+Joins the game
+Plays cards with simple AI logic
+Participates in tricks
+Game Flow:
+Players join until 4 are connected
+Cards are dealt
+Players play tricks
+Scoring is calculated
+Multiple rounds are played
+API Endpoints:
+/api/join - Join the game as a player or bot
+/api/play-card - Play a card
+/api/status - Get current game status
+
+
+To Test
+
+npm run dev
+
+Then make requests like:
+
+GET http://localhost:8787/api/status?gameId=game1
+
+POST http://localhost:8787/api/join?gameId=game1
