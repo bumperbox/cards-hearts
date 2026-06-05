@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import seedrandom from 'seedrandom';
 
 // Types for the card game
 type Suit = "hearts" | "diamonds" | "clubs" | "spades";
@@ -41,10 +42,16 @@ interface GameMessage {
  */
 export class CardGame extends DurableObject<Env> {
 	private gameState: GameState;
+	private rng: () => number;
 	private clients: Map<string, WebSocket> = new Map();
 
 	constructor(ctx: DurableObjectState, env: Env) {
 		super(ctx, env);
+
+		// Seed with game ID for reproducible shuffles
+		const seed = ctx.id.toString();
+		this.rng = seedrandom(seed);
+
 		this.gameState = {
 			gameId: ctx.id.toString(),
 			players: [],
@@ -54,6 +61,7 @@ export class CardGame extends DurableObject<Env> {
 			status: "waiting",
 			round: 1,
 		};
+
 		this.initializeDeck();
 	}
 
@@ -65,11 +73,13 @@ export class CardGame extends DurableObject<Env> {
 		const ranks: Rank[] = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 
 		this.gameState.deck = [];
+
 		for (const suit of suits) {
 			for (const rank of ranks) {
 				this.gameState.deck.push({ suit, rank });
 			}
 		}
+
 		this.shuffleDeck();
 	}
 
@@ -79,11 +89,10 @@ export class CardGame extends DurableObject<Env> {
 	private shuffleDeck(): void {
 		const deck = this.gameState.deck;
 		for (let i = deck.length - 1; i > 0; i--) {
-			const j = Math.floor(Math.random() * (i + 1));
+			const j = Math.floor(this.rng() * (i + 1));
 			[deck[i], deck[j]] = [deck[j], deck[i]];
 		}
 	}
-
 	/**
 	 * Handle a player joining the game
 	 */
