@@ -318,7 +318,7 @@ export class CardGame extends DurableObject<Env> {
 			const [client, server] = Object.values(pair);
 
 			const playerId = url.searchParams.get("playerId") || `bot_${Date.now()}`;
-			const playerName = url.searchParams.get("playerName") || `Bot_${Math.random().toString(36).substr(2, 9)}`;
+			const playerName = url.searchParams.get("playerName") || `Bot_${Math.random().toString(36).substring(2, 9)}`;
 			const isBot = url.searchParams.get("isBot") === "true";
 
 			this.clients.set(playerId, server);
@@ -374,30 +374,6 @@ export class CardGame extends DurableObject<Env> {
  * Learn more at https://developers.cloudflare.com/durable-objects
  */
 
-/** A Durable Object's behavior is defined in an exported Javascript class */
-export class MyDurableObject extends DurableObject<Env> {
-	/**
-	 * The constructor is invoked once upon creation of the Durable Object, i.e. the first call to
-	 * 	`DurableObjectStub::get` for a given identifier (no-op constructors can be omitted)
-	 *
-	 * @param ctx - The interface for interacting with Durable Object state
-	 * @param env - The interface to reference bindings declared in wrangler.jsonc
-	 */
-	constructor(ctx: DurableObjectState, env: Env) {
-		super(ctx, env);
-	}
-
-	/**
-	 * The Durable Object exposes an RPC method sayHello which will be invoked when a Durable
-	 *  Object instance receives a request from a Worker via the same method invocation on the stub
-	 *
-	 * @param name - The name provided to a Durable Object instance from a Worker
-	 * @returns The greeting to be sent back to the Worker
-	 */
-	async sayHello(name: string): Promise<string> {
-		return `Hello, ${name}!`;
-	}
-}
 
 export default {
 	/**
@@ -408,18 +384,24 @@ export default {
 	 * @param ctx - The execution context of the Worker
 	 * @returns The response to be sent back to the client
 	 */
-	async fetch(request, env, ctx): Promise<Response> {
-		// Create a stub to open a communication channel with the Durable Object
-		// instance named "foo".
-		//
-		// Requests from all Workers to the Durable Object instance named "foo"
-		// will go to a single remote Durable Object instance.
-		const stub = env.MY_DURABLE_OBJECT.getByName("foo");
+	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+		const url = new URL(request.url);
 
-		// Call the `sayHello()` RPC method on the stub to invoke the method on
-		// the remote Durable Object instance.
-		const greeting = await stub.sayHello("world");
+		if (url.pathname === "/create-game") {
+			// Create a new game instance
+			const gameId = `game_${Date.now()}`;
+			return new Response(JSON.stringify({ gameId, wsUrl: `/ws/${gameId}` }), {
+				headers: { "Content-Type": "application/json" },
+			});
+		}
 
-		return new Response(greeting);
+		if (url.pathname.startsWith("/ws/")) {
+			// Route to game Durable Object
+			const gameId = url.pathname.split("/")[2];
+			const stub = env.MY_DURABLE_OBJECT.getByName(gameId);
+			return stub.fetch(request);
+		}
+
+		return new Response("Card Game API - Use /create-game to start a game", { status: 200 });
 	},
 } satisfies ExportedHandler<Env>;

@@ -27,6 +27,8 @@ npm run dev
 
 Then make requests like:
 
+GET http://localhost:8787/create-game
+
 GET http://localhost:8787/api/status?gameId=game1
 
 POST http://localhost:8787/api/join?gameId=game1
